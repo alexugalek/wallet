@@ -14,8 +14,12 @@
     value1 = select1.options[select1.selectedIndex].value;
     value2 = select2.options[select2.selectedIndex].value;
     document.form_date_filter.action = value1 + '-' + value2;
+    document.form_send_email.action = value1 + '-' + value2;
 }
 </script>
+
+{% url 'finance:send-email' request.user.id as url_send_email %}
+
 <form id="form_date_filter" name="form_date_filter" action="{{ url_info }}"></form>
   <div class="form-row align-items-center">
     <div class="col-auto my-1">
@@ -46,5 +50,9 @@
     <div class="col-auto my-1">
       <button form="form_date_filter" type="submit" class="btn border-color background-color text-color" onclick="getValue()">Show</button>
     </div>
-  </div>
+    <div class="col-auto my-1">
+    <form id="form_send_email" name="form_send_email" action="{{ url_send_email }}" method="post" hidden>{{ send_email_form }}{% csrf_token %}</form>
 
+      <button form="form_send_email" type="submit" class="btn border-color background-color text-color">Send {{ current_month }} statistic to Email</button>
+    </div>
+  </div>

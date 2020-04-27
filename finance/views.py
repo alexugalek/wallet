@@ -1,15 +1,44 @@
 import calendar
+import os
+from django.contrib.auth.decorators import login_required
+from django.core.mail import EmailMessage
+from django.http import HttpResponse
 from django.shortcuts import render
 from .models import Categories, FinancialExpenses, AccountSettings
-from django.urls import reverse, reverse_lazy
-from django.contrib.auth.views import LoginView, LogoutView
-from .forms import AuthUserForm, RegistrationLoginForm, ExpenseAddForm, AccountSettingsForm
+from django.urls import reverse
+from .forms import ExpenseAddForm, AccountSettingsForm, SendEmailForm
 from django.contrib.auth.models import User
 from django.views.generic import CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth import login, authenticate
 from django.shortcuts import redirect
-from wallet.settings import TODAY_IS
+from wallet.settings import TODAY_IS, BASE_DIR, EMAIL_HOST_USER
+
+
+def send_email_custom(subject, message, from_email, to_emails, attachment=None, tmp_attachments=True):
+    email = EmailMessage(subject, message, from_email, to_emails)
+    if attachment is not None:
+        email.attach_file(attachment)
+    email.send()
+    if attachment and tmp_attachments:
+        os.remove(attachment) if os.path.isfile(attachment) else None
+
+
+def month_converter(month):
+    months_dict = {
+        'January': 1,
+        'February': 2,
+        'March': 3,
+        'April': 4,
+        'May': 5,
+        'June': 6,
+        'July': 7,
+        'August': 8,
+        'September': 9,
+        'October': 10,
+        'November': 11,
+        'December': 12
+    }
+    return months_dict.get(month)
 
 
 def home(request):
@@ -18,18 +47,6 @@ def home(request):
     }
     template = 'home.html'
     return render(request, template, context)
-
-
-class WalletLoginView(LoginView):
-    template_name = 'login.html'
-    form_class = AuthUserForm
-
-    def get_context_data(self, **kwargs):
-        kwargs['categories'] = Categories.objects.all()
-        return super().get_context_data(**kwargs)
-
-    def get_success_url(self):
-        return reverse('finance:info', args=[self.request.user.id])
 
 
 class LoginRequiredCustomMixin(LoginRequiredMixin):
@@ -52,39 +69,6 @@ class LoginRequiredCustomMixinId(LoginRequiredMixin):
         return super().dispatch(request, *args, **kwargs)
 
 
-class RegistrationLoginView(CreateView):
-    model = User
-    template_name = 'registration.html'
-    form_class = RegistrationLoginForm
-
-    def get_context_data(self, **kwargs):
-        kwargs['categories'] = Categories.objects.all()
-        return super().get_context_data(**kwargs)
-
-    def form_valid(self, form):
-        form_valid = super().form_valid(form)
-        username = form.cleaned_data['username']
-        password = form.cleaned_data['password']
-        auth_user = authenticate(username=username, password=password)
-        login(self.request, auth_user)
-
-        # user settings creation
-        for category in Categories.objects.all():
-            account = AccountSettings()
-            account.user = self.request.user
-            account.category = category
-            account.save()
-
-        return form_valid
-
-    def get_success_url(self):
-        return reverse('finance:info', args=[self.object.id])
-
-
-class WalletLogoutView(LogoutView):
-    next_page = reverse_lazy('finance:home')
-
-
 class ExpenseAddView(LoginRequiredCustomMixin, CreateView):
 
     model = FinancialExpenses
@@ -93,26 +77,11 @@ class ExpenseAddView(LoginRequiredCustomMixin, CreateView):
 
     def get_context_data(self, **kwargs):
 
-        months_dict = {
-            'January': 1,
-            'February': 2,
-            'March': 3,
-            'April': 4,
-            'May': 5,
-            'June': 6,
-            'July': 7,
-            'August': 8,
-            'September': 9,
-            'October': 10,
-            'November': 11,
-            'December': 12
-        }
-
         # identification of requested date
         now = TODAY_IS
         year, month, day = now.year, now.month, now.day
         year = self.kwargs.get('year_filter') or year
-        month = months_dict.get(self.kwargs.get('month_filter')) or month
+        month = month_converter(self.kwargs.get('month_filter')) or month
 
         # query to db to get all records for current month
         expenses_objects = FinancialExpenses.objects.filter(
@@ -203,6 +172,8 @@ class ExpenseAddView(LoginRequiredCustomMixin, CreateView):
         kwargs['current_year'] = year
         kwargs['current_month'] = calendar.month_name[month]
         kwargs['limits'] = limit_values
+        user_data_to_send = {'pk': self.kwargs['pk'], 'year': year, 'month': month}
+        kwargs['send_email_form'] = SendEmailForm(user_data_to_send)
 
         return super().get_context_data(**kwargs)
 
@@ -300,3 +271,41 @@ class SettingsUpdateView(LoginRequiredCustomMixinId, UpdateView):
         self.object.category = record_queryset.category
         self.object.save()
         return super().form_valid(form)
+
+
+@login_required
+def send_email(request, pk):
+    if request.method == "POST":
+        form = SendEmailForm(request.POST)
+        if form.is_valid():
+            cd = form.cleaned_data
+            user_email = User.objects.get(pk=pk).email
+            info_data = []
+            total_expenses = 0
+            if user_email:
+                subject = f'Expense statistics for {cd["year"]}-{calendar.month_name[cd["month"]]}'
+                message = 'Find you statistic in attachment'
+                file_to_send_url = f'{BASE_DIR}/finance/static/emails/{pk}-{cd["year"]}-{cd["month"]}.txt'
+
+                for expense in FinancialExpenses.objects.filter(user__id=pk, created__year=cd["year"], created__month=cd["month"]):
+                    info_data.append(f'{expense.created.strftime("%d-%m-%Y: %H:%M")} '
+                                     f'was spent {expense.expense_value} '
+                                     f'in {expense.subcategory.category.name}: {expense.subcategory.name}')
+                    total_expenses += expense.expense_value
+                info_data.append(f'Total expenses: {total_expenses}')
+
+                try:
+                    with open(file_to_send_url, 'w') as file:
+                        file.write('\n'.join(info_data))
+
+                    send_email_custom(subject, message, EMAIL_HOST_USER, [user_email, ], file_to_send_url)
+
+                except Exception:
+                    pass
+
+            return redirect('finance:info-detail',
+                            pk=request.user.id,
+                            year_filter=cd['year'],
+                            month_filter=calendar.month_name[cd['month']])
+        return HttpResponse('Bad query')
+    return HttpResponse('Bad query')
