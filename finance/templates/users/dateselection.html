@@ -1,0 +1,50 @@
+<style>
+.text-color {
+    color: lightslategrey;
+}
+.border-color {
+    border-color: lightslategrey;
+}
+</style>
+<script>
+    var select1, select2, value1, value2;
+    function getValue() {
+    select1 = document.getElementById("inlineFormCustomSelectYear");
+    select2 = document.getElementById("inlineFormCustomSelectMonth");
+    value1 = select1.options[select1.selectedIndex].value;
+    value2 = select2.options[select2.selectedIndex].value;
+    document.form_date_filter.action = value1 + '-' + value2;
+}
+</script>
+<form id="form_date_filter" name="form_date_filter" action="{{ url_info }}"></form>
+  <div class="form-row align-items-center">
+    <div class="col-auto my-1">
+      <label class="mr-sm-2 sr-only" for="inlineFormCustomSelect">Preference</label>
+       <select class="custom-select mr-sm-2 border-color background-color text-color" id="inlineFormCustomSelectYear" name="year-filter" required>
+        <option value="2019" {% if  current_year == 2019 %} selected="selected" {% endif %}>2019</option>
+        <option value="2020" {% if  current_year == 2020 %} selected="selected" {% endif %}>2020</option>
+      </select>
+    </div>
+     <div class="col-auto my-1">
+      <label class="mr-sm-2 sr-only" for="inlineFormCustomSelect">Preference</label>
+      <select class="custom-select mr-sm-2 border-color background-color text-color" id="inlineFormCustomSelectMonth" name="month-filter">
+        <option value="January" {% if  current_month == 'January' %} selected="selected" {% endif %}>January</option>
+        <option value="February" {% if  current_month == 'February' %} selected="selected" {% endif %}>February</option>
+        <option value="March" {% if  current_month == 'March' %} selected="selected" {% endif %}>March</option>
+        <option value="April" {% if  current_month == 'April' %} selected="selected" {% endif %}>April</option>
+        <option value="May" {% if  current_month == 'May' %} selected="selected" {% endif %}>May</option>
+        <option value="June" {% if  current_month == 'June' %} selected="selected" {% endif %}>June</option>
+        <option value="July" {% if  current_month == 'July' %} selected="selected" {% endif %}>July</option>
+        <option value="August" {% if  current_month == 'August' %} selected="selected" {% endif %}>August</option>
+        <option value="September" {% if  current_month == 'September' %} selected="selected" {% endif %}>September</option>
+        <option value="October" {% if  current_month == 'October' %} selected="selected" {% endif %}>October</option>
+        <option value="November" {% if  current_month == 'November' %} selected="selected" {% endif %}>November</option>
+        <option value="December" {% if  current_month == 'December' %} selected="selected" {% endif %}>December</option>
+      </select>
+    </div>
+
+    <div class="col-auto my-1">
+      <button form="form_date_filter" type="submit" class="btn border-color background-color text-color" onclick="getValue()">Show</button>
+    </div>
+  </div>
+

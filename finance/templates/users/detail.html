@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block content %}
+{% url 'finance:detail' request.user.id formatted_day as return_finance_detail_user %}
+{% url 'finance:delete' request.user.id field.id as delete_url %}
+{% if update_func %}
+
+<div align="center" class="container col-lg-12">
+  <div class="container col-lg-4">
+    <form id="form_update_id" method="post">
+              {% csrf_token %}
+              {{form}}
+    </form>
+  </div>
+  <div align="center">
+    <button form="form_update_id" type="submit" class="btn btn-primary mt-2">Save changes</button>
+  </div>
+  <div align="center">
+    <a href="{{return_finance_detail_user}}">Cancel</a>
+  </div>
+</div>
+
+{% else %}
+<div class="table-responsive">
+<table class="table table-striped table-dark">
+  <thead>
+    <tr>
+      <th scope="col"></th>
+      <th scope="col">Time</th>
+      <th scope="col">Category</th>
+      <th scope="col">Subcategory</th>
+      <th scope="col">Value</th>
+      <th scope="col">Comment</th>
+      <th scope="col"></th>
+      <th scope="col"></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for field in detail_fields %}
+    <tr>
+      <th scope="row">{{ forloop.counter }}</th>
+      <td>{{field.created|time:"TIME_FORMAT"}}</td>
+      <td>{{field.subcategory.category.name}}</td>
+      <td>{{field.subcategory.name}}</td>
+      <td>{{field.expense_value}}</td>
+      <td>{{field.comment|truncatechars:5}}</td>
+      <td><a class="text-link-color" href={{field.get_absolute_url_update_record}}>View/Edit</a></td>
+      <td>
+       <form id={{ field.id }} action="{{ field.get_absolute_url_delete_record }}" method="post">{% csrf_token %} </form>
+        <a href="#" onclick="delete_question({{ field.id }})" class="text-link-color" type="submit">Delete</a>
+
+
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<script>
+  function delete_question(index) {
+     if (confirm('Delete record?')) {
+        document.getElementById(index).submit()
+     }
+  }
+</script>
+{% endif %}
+{% endblock %}

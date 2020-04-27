@@ -1,0 +1,120 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link href="{% static "styles.css" %}" rel="stylesheet">
+    <style>
+       .background-color {
+         background-color: #4f4f4f;
+        }
+       .text-link-color {
+           color: #9c9c9c;
+       }
+       .danger-text-color {
+           color: darkred;
+       }
+    </style>
+
+  <title>Wallet</title>
+
+  </head>
+
+<body class="background-color">
+{% url 'finance:info' request.user.id as url_info %}
+{% url 'finance:logout' as url_logout %}
+{% url 'finance:registration' as url_registration %}
+{% url 'finance:login' as url_login %}
+{% url 'finance:home' as url_home %}
+{% url 'finance:settings' request.user.id as url_settings %}
+
+<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Add Expenses</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="form_add_expenses" method="post" action="{{url_info}}">
+          {% csrf_token %}
+          {{form}}
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button form="form_add_expenses" type="submit" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+  <nav class="navbar navbar-dark bg-primary">
+    <nav class="navbar navbar-expand-lg">
+      <a class="navbar-brand" href="/">Wallet</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item">
+
+            <a class="nav-link {% if url_home == request.path %}active{% endif %}" href={{url_home}}>Home<span class="sr-only">(current)</span></a>
+          </li>
+        </ul>
+        <ul class="navbar-nav navbar-nav ml-md-auto">
+          {% if request.user.is_authenticated %}
+
+          {% block AddExpenses %}
+          <li class="nav-item">
+            <a class="nav-link" href="#exampleModal" data-toggle="modal" data-target="#exampleModal">Add expenses</a>
+          </li>
+          {% endblock AddExpenses %}
+          <li class="nav-item">
+
+            <a class="nav-link {% if url_logout == request.path %}active{% endif %}" href="{{url_logout}}">LogOut</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if url_info == request.path %}active{% endif %}" href="{{ url_info }}">Info</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link {% if url_settings == request.path %}active{% endif %}" href="{{ url_settings }}">Settings</a>
+          </li>
+          {% else %}
+          <li class="nav-item">
+
+            <a class="nav-link {% if url_registration == request.path %}active{% endif %}" href="{{url_registration}}">Registration</a>
+          </li>
+          <li class="nav-item">
+
+            <a class="nav-link {% if url_login == request.path %}active{% endif %}" href="{{url_login}}">LogIn</a>
+          </li>
+          {% endif %}
+
+        </ul>
+
+
+      </div>
+    </nav>
+  </nav>
+
+
+  {% block content %}
+  {% endblock content %}
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+  </body>
+</html>

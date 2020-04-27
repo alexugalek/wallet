@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block content %}
+{% block AddExpenses %}
+{% endblock %}
+
+{% if update_func %}
+
+<div align="center" class="container col-lg-12">
+  <div class="container col-lg-4">
+      <h4>{{ category }}</h4>
+    <form id="form_update_id" method="post" action="{{ setting.get_absolute_url_settings }}">
+              {% csrf_token %}
+
+              {{form}}
+    </form>
+  </div>
+  <div align="center">
+    <button form="form_update_id" type="submit" class="btn btn-primary mt-2">Save changes</button>
+  </div>
+  <div align="center">
+    <a href="{% url 'finance:settings' request.user.id %}">Cancel</a>
+  </div>
+</div>
+
+{% else %}
+
+<div class="table-responsive">
+  <table class="table table-hover table-dark">
+  <thead>
+    <tr>
+      <th scope="col">Category</th>
+      <th scope="col">Limit value</th>
+      <th scope="col"></th>
+      <th scope="col">Edit</th>
+    </tr>
+  </thead>
+  <tbody>
+
+
+  {% for setting in all_settings %}
+    <tr>
+    <th scope="col">{{setting.category.name}}</th>
+    <th scope="col">{{setting.limit_value}}</th>
+    <th scope="col">{% if setting.report %}Included in daily limits{% else %}-{% endif %}</th>
+    <th scope="col"><a href="{{ setting.get_absolute_url_settings }}" class="text-link-color">Edit</a></th>
+    </tr>
+  {% endfor %}
+
+  </tbody>
+</table>
+</div>
+{% endif %}
+{% endblock %}
