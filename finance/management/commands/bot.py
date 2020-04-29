@@ -11,11 +11,12 @@ from finance.models import TelegramCredentials, SubCategories, FinancialExpenses
 from django.contrib.auth.models import User
 from django.db.models import Sum
 from wallet.settings import TODAY_IS, PERMANENT_URL
+import datetime
 import re
 
 
 def get_message(text, chat_id):
-    now = TODAY_IS
+    now = datetime.datetime.utcnow()
     year, month, day = now.year, now.month, now.day
     username = TelegramCredentials.objects.get(telegram_id=chat_id).user.username
     subcategories_names = '\n'.join([subcategory.name for subcategory in SubCategories.objects.all() if subcategory.name != 'Other'])
@@ -24,13 +25,18 @@ def get_message(text, chat_id):
     if raw_text == 'balance':
         common_limit = AccountSettings.objects.filter(user__username=username, report=True).values('user__id').annotate(value=Sum('limit_value'))
         common_limit = common_limit.get()['value'] if common_limit else 0
+        reported_categories = [setting.category.name for setting in AccountSettings.objects.filter(user__username=username, report=True)]
 
-        today_expenses = FinancialExpenses.objects.filter(created__year=year, created__month=month, created__day=day, user__username=username).values('user__id').annotate(value=Sum('expense_value'))
-        today_expenses = today_expenses.get()['value'] if today_expenses else 0
+        today_expenses = FinancialExpenses.objects.filter(created__year=year, created__month=month, created__day=day, user__username=username).values('user__id', 'subcategory__category__name').annotate(value=Sum('expense_value'))
+        today_expenses_amount = 0
+        for expense in today_expenses:
+            if expense['subcategory__category__name'] in reported_categories:
+                today_expenses_amount += expense['value']
+        # today_expenses = today_expenses.get()['value'] if today_expenses else 0
 
-        common_limit_text_part = f'Hello my friend!\nYour balance for today is still : {round((common_limit - today_expenses), 2)}$'
+        common_limit_text_part = f'Hello my friend!\nYour balance for today is still : {round((common_limit - today_expenses_amount), 2)}$'
 
-        expense_text_part = f'Your spent today : {round((today_expenses), 2)}$'
+        expense_text_part = f'Your spent today : {round((today_expenses_amount), 2)}$'
 
         if common_limit == 0:
             return expense_text_part
@@ -76,6 +82,7 @@ def get_message(text, chat_id):
 def do_echo(update: Update, context: CallbackContext):
     chat_id = update.message.chat_id
     text = update.message.text
+
     if not TelegramCredentials.objects.filter(telegram_id=chat_id).exists():
 
         try:

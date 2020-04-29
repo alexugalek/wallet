@@ -27,9 +27,9 @@
 
 <body class="background-color">
 {% url 'finance:info' request.user.id as url_info %}
-{% url 'logout' as url_logout %}
-{% url 'login' as url_login %}
-{% url 'registration' as url_registration %}
+{% url 'permissions:logout' as url_logout %}
+{% url 'permissions:login' as url_login %}
+{% url 'permissions:registration' as url_registration %}
 {% url 'finance:home' as url_home %}
 {% url 'finance:settings' request.user.id as url_settings %}
 

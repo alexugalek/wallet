@@ -50,23 +50,11 @@ def home(request):
 
 
 class LoginRequiredCustomMixin(LoginRequiredMixin):
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect('finance:login')
-        elif self.request.user.id != self.kwargs['pk']:
-            return redirect('finance:info', self.request.user.id)
-        return super().dispatch(request, *args, **kwargs)
-
-
-class LoginRequiredCustomMixinId(LoginRequiredMixin):
-
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return redirect('finance:login')
-        elif self.request.user.id != self.kwargs['id']:
-            return redirect('finance:info', self.request.user.id)
-        return super().dispatch(request, *args, **kwargs)
+    pass
+    # def dispatch(self, request, *args, **kwargs):
+    #     if not request.user.is_authenticated:
+    #         return redirect('login')
+    #     return super().dispatch(request, *args, **kwargs)
 
 
 class ExpenseAddView(LoginRequiredCustomMixin, CreateView):
@@ -85,7 +73,7 @@ class ExpenseAddView(LoginRequiredCustomMixin, CreateView):
 
         # query to db to get all records for current month
         expenses_objects = FinancialExpenses.objects.filter(
-            user__id=self.kwargs['pk'], created__year=year,
+            user__id=self.request.user.id, created__year=year,
             created__month=month).order_by('-created')
 
         # query to db to get all current categories
@@ -129,7 +117,7 @@ class ExpenseAddView(LoginRequiredCustomMixin, CreateView):
 
         # check account setting for update
         for category in categories_objects:
-            if not AccountSettings.objects.filter(user__id=self.kwargs['pk'],
+            if not AccountSettings.objects.filter(user__id=self.request.user.id,
                                                   category=category).exists():
                 account = AccountSettings()
                 account.user = self.request.user
@@ -140,10 +128,10 @@ class ExpenseAddView(LoginRequiredCustomMixin, CreateView):
             limit_values = {
                 setting.category.name:
                 setting.limit_value - coast_data.get(now.date(), {}).get(setting.category.name, 0) if setting.report else '-'
-                for setting in AccountSettings.objects.filter(user__id=self.kwargs['pk']).order_by('category__name')
+                for setting in AccountSettings.objects.filter(user__id=self.request.user.id).order_by('category__name')
             }
 
-            categories_for_report = AccountSettings.objects.filter(user__id=self.kwargs['pk'], report=True)
+            categories_for_report = AccountSettings.objects.filter(user__id=self.request.user.id, report=True)
 
             total_day_limits = sum(setting.limit_value for setting in categories_for_report)
 
@@ -172,7 +160,7 @@ class ExpenseAddView(LoginRequiredCustomMixin, CreateView):
         kwargs['current_year'] = year
         kwargs['current_month'] = calendar.month_name[month]
         kwargs['limits'] = limit_values
-        user_data_to_send = {'pk': self.kwargs['pk'], 'year': year, 'month': month}
+        user_data_to_send = {'pk': self.request.user.id, 'year': year, 'month': month}
         kwargs['send_email_form'] = SendEmailForm(user_data_to_send)
 
         return super().get_context_data(**kwargs)
@@ -206,7 +194,7 @@ class DetailDayView(LoginRequiredCustomMixin, CreateView):
         return super().get_context_data(**kwargs)
 
 
-class DetailUpdateView(LoginRequiredCustomMixinId, UpdateView):
+class DetailUpdateView(LoginRequiredCustomMixin, UpdateView):
     model = FinancialExpenses
     template_name = 'users/detail.html'
     form_class = ExpenseAddForm
@@ -251,7 +239,7 @@ class SettingsCreateView(LoginRequiredCustomMixin, CreateView):
         return reverse('finance:settings', args=[self.request.user.id])
 
 
-class SettingsUpdateView(LoginRequiredCustomMixinId, UpdateView):
+class SettingsUpdateView(LoginRequiredCustomMixin, UpdateView):
     model = AccountSettings
     template_name = 'users/account.html'
     form_class = AccountSettingsForm

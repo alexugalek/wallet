@@ -35,6 +35,8 @@ ALLOWED_HOSTS = [
 # Application definition
 
 INSTALLED_APPS = [
+    'finance.apps.FinanceConfig',
+    'permissions.apps.PermissionsConfig',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -42,8 +44,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'djmoney',
-    'finance.apps.FinanceConfig',
-    'permissions.apps.PermissionsConfig'
 ]
 
 MIDDLEWARE = [
@@ -129,16 +129,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
+LOGIN_REDIRECT_URL = '/'
 # EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_USER = 'myemail@gmail.com'
-EMAIL_HOST_PASSWORD = 'mypass'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
 
-# Telegram bot settings
-
-TOKEN = 'mytoken'
 PROXY_URL = 'https://telegg.ru/orig/bot'
 
 
