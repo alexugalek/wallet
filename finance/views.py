@@ -4,9 +4,9 @@ from django.contrib.auth.decorators import login_required
 from django.core.mail import EmailMessage
 from django.http import HttpResponse
 from django.shortcuts import render
-from .models import Categories, FinancialExpenses, AccountSettings
+from .models import Categories, FinancialExpenses, AccountSettings, Bills
 from django.urls import reverse
-from .forms import ExpenseAddForm, AccountSettingsForm, SendEmailForm
+from .forms import ExpenseAddForm, AccountSettingsForm, SendEmailForm, AddBill
 from django.contrib.auth.models import User
 from django.views.generic import CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -162,6 +162,7 @@ class ExpenseAddView(LoginRequiredCustomMixin, CreateView):
         kwargs['limits'] = limit_values
         user_data_to_send = {'pk': self.request.user.id, 'year': year, 'month': month}
         kwargs['send_email_form'] = SendEmailForm(user_data_to_send)
+        kwargs['add_bill_photo'] = AddBill()
 
         return super().get_context_data(**kwargs)
 
@@ -188,10 +189,27 @@ class DetailDayView(LoginRequiredCustomMixin, CreateView):
             user__id=self.request.user.id, created__year=year_request,
             created__month=month_request, created__day=day_request
         )
+        detail_bills = Bills.objects.filter(
+            user__id=self.request.user.id, created__year=year_request,
+            created__month=month_request, created__day=day_request
+        )
 
         kwargs['detail_fields'] = detail_fields
+        kwargs['detail_bills'] = detail_bills
 
         return super().get_context_data(**kwargs)
+
+    def form_valid(self, form):
+        self.object = form.save(commit=False)
+        self.object.user = self.request.user
+        self.object.save()
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse(
+            'finance:detail', args=[self.request.user.id,
+                                    self.kwargs['date']]
+        )
 
 
 class DetailUpdateView(LoginRequiredCustomMixin, UpdateView):
@@ -297,3 +315,15 @@ def send_email(request, pk):
                             month_filter=calendar.month_name[cd['month']])
         return HttpResponse('Bad query')
     return HttpResponse('Bad query')
+
+
+def add_bill_photo(request, pk):
+    if request.method == "POST":
+        add_bill_form = AddBill(data=request.POST,
+                                files=request.FILES)
+        if add_bill_form.is_valid():
+            new_bill = add_bill_form.save(commit=False)
+            new_bill.user = User.objects.get(pk=pk)
+            add_bill_form.save()
+    return redirect('finance:info',
+                    pk=request.user.id)

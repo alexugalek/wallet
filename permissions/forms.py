@@ -16,9 +16,15 @@ class AuthUserForm(AuthenticationForm, forms.ModelForm):
 
 
 class RegistrationLoginForm(forms.ModelForm):
+
+    password = forms.CharField(label='Pass',
+                               widget=forms.PasswordInput)
+    password2 = forms.CharField(label='Repeat password',
+                                widget=forms.PasswordInput)
+
     class Meta:
         model = User
-        fields = ['username', 'password', 'email']
+        fields = ['username', 'email']
         help_texts = {
             'username': None,
         }
@@ -27,6 +33,14 @@ class RegistrationLoginForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field in self.fields:
             self.fields[field].widget.attrs['class'] = 'form-control'
+
+    def clean_password2(self):
+        cd = self.cleaned_data
+        if cd['password'] != cd['password2']:
+            raise forms.ValidationError('Passwords mismatch')
+        if len(cd['password']) < 5:
+            raise forms.ValidationError('Please enter password with more than 4 symbols')
+        return cd['password']
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -52,6 +66,21 @@ class SetPasswordFormCustom(SetPasswordForm):
         strip=False,
         help_text=None,
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            self.fields[field].widget.attrs['class'] = 'form-control'
+
+
+class EditInfo(forms.ModelForm):
+
+    class Meta:
+        model = User
+        fields = ['username', 'email']
+        help_texts = {
+            'username': None,
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

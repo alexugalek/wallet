@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="ml-3">
+   <h1>
+     Edit personal info
+   </h1>
+</div>
+<div class="col-3">
+    <form id="add_form" method="post">
+      {% csrf_token %}
+      {{edit_form}}
+      <input type="hidden" name="next" value="{{ next }}">
+      <button form="add_form" type="submit" class="btn btn-primary mt-4">Save</button>
+    </form>
+</div>
+{% if successful_changed %}
+<div id="my-alert" class="col-lg-3" align="center">
+<div class="alert alert-primary mt-3" role="alert" align="center">
+  Successful done!
+</div>
+    </div>
+
+<script>
+setTimeout(()=>{
+var alertId = document.getElementById('my-alert')
+alertId.classList.add('modal')
+},1000);
+</script>
+    {% endif %}
+{% endblock %}

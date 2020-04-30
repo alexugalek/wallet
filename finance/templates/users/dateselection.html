@@ -19,6 +19,7 @@
 </script>
 
 {% url 'finance:send-email' request.user.id as url_send_email %}
+{% url 'finance:add-bill' request.user.id as url_add_bill %}
 
 <form id="form_date_filter" name="form_date_filter" action="{{ url_info }}"></form>
   <div class="form-row align-items-center">
@@ -52,7 +53,12 @@
     </div>
     <div class="col-auto my-1">
     <form id="form_send_email" name="form_send_email" action="{{ url_send_email }}" method="post" hidden>{{ send_email_form }}{% csrf_token %}</form>
-
       <button form="form_send_email" type="submit" class="btn border-color background-color text-color">Send {{ current_month }} statistic to Email</button>
+    </div>
+     <div class="col-auto my-1 i">
+    <form id="form_add_bill" name="form_add_bill" action="{{ url_add_bill }}" method="post" enctype="multipart/form-data">{{ add_bill_photo }}{% csrf_token %}</form>
+          </div>
+  <div class="col-auto my-1 i">
+      <button form="form_add_bill" type="submit" class="btn border-color background-color text-color">Add bill</button>
     </div>
   </div>

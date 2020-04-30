@@ -8,8 +8,12 @@ from wallet.settings import TODAY_IS
 # Create your models here.
 
 
-def get_default(model):
-    return model.objects.first()
+def get_default_subcategory():
+    return SubCategories.objects.first()
+
+
+def get_default_category():
+    return Categories.objects.first()
 
 
 class Categories(models.Model):
@@ -28,7 +32,7 @@ class Categories(models.Model):
 class SubCategories(models.Model):
 
     name = models.CharField(max_length=100, default=None, null=True, blank=True)
-    category = models.ForeignKey(Categories, on_delete=models.CASCADE)
+    category = models.ForeignKey(Categories, on_delete=models.CASCADE, default=get_default_category)
 
     class Meta:
         verbose_name = "Subcategory"
@@ -42,7 +46,7 @@ class FinancialExpenses(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     expense_value = MoneyField(max_digits=14, decimal_places=2, default_currency='USD', default=0, currency_choices=(('USD', 'USD'), ))
-    subcategory = models.ForeignKey(SubCategories, on_delete=models.CASCADE, null=True)
+    subcategory = models.ForeignKey(SubCategories, on_delete=models.CASCADE, null=True, default=get_default_subcategory)
     comment = models.TextField(max_length=100, blank=True, default=None, null=True)
     publish = models.DateTimeField(default=timezone.now)
     updated = models.DateTimeField(auto_now=True)
@@ -73,7 +77,7 @@ class FinancialExpenses(models.Model):
 class AccountSettings(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, default=None, null=True, blank=True)
-    category = models.ForeignKey(Categories, on_delete=models.CASCADE, null=True, blank=True)
+    category = models.ForeignKey(Categories, on_delete=models.CASCADE, null=True, blank=True, default=get_default_category)
     limit_value = MoneyField(max_digits=14, decimal_places=2, default_currency='USD', default=100, currency_choices=(('USD', 'USD'),))
     report = models.BooleanField(default=True)
     updated = models.DateTimeField(auto_now=True)
@@ -97,3 +101,17 @@ class TelegramCredentials(models.Model):
     telegram_id = models.IntegerField(default=None, blank=True, null=True)
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
+
+
+class Bills(models.Model):
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    bill_photo = models.ImageField(upload_to='all-bills/%Y/%m/%d/', blank=True)
+    created = models.DateField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Bill"
+        verbose_name_plural = "Bills"
+
+    def __str__(self):
+        return '{}: {}'.format(self.user.username, self.id)

@@ -1,5 +1,5 @@
 from django import forms
-from .models import FinancialExpenses, AccountSettings
+from .models import FinancialExpenses, AccountSettings, Bills
 from django.contrib.auth.mixins import LoginRequiredMixin
 
 
@@ -33,3 +33,14 @@ class SendEmailForm(forms.Form):
     pk = forms.IntegerField()
     year = forms.IntegerField()
     month = forms.IntegerField()
+
+
+class AddBill(forms.ModelForm):
+    class Meta:
+        model = Bills
+        fields = ['bill_photo']
+
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     for field in self.fields:
+    #         self.fields[field].widget.attrs['class'] = 'form-control'

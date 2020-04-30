@@ -4,6 +4,7 @@
 {% url 'finance:delete' request.user.id field.id as delete_url %}
 {% if update_func %}
 
+
 <div align="center" class="container col-lg-12">
   <div class="container col-lg-4">
     <form id="form_update_id" method="post">
@@ -29,7 +30,7 @@
       <th scope="col">Category</th>
       <th scope="col">Subcategory</th>
       <th scope="col">Value</th>
-      <th scope="col">Comment</th>
+{#      <th scope="col">Comment</th>#}
       <th scope="col"></th>
       <th scope="col"></th>
     </tr>
@@ -42,7 +43,7 @@
       <td>{{field.subcategory.category.name}}</td>
       <td>{{field.subcategory.name}}</td>
       <td>{{field.expense_value}}</td>
-      <td>{{field.comment|truncatechars:5}}</td>
+{#      <td>{{field.comment|truncatechars:5}}</td>#}
       <td><a class="text-link-color" href={{field.get_absolute_url_update_record}}>View/Edit</a></td>
       <td>
        <form id={{ field.id }} action="{{ field.get_absolute_url_delete_record }}" method="post">{% csrf_token %} </form>
@@ -55,6 +56,39 @@
   </tbody>
 </table>
 </div>
+{% if detail_bills.count %}
+<div align="center">
+
+<p>Your bills here</p>
+
+<div id="carouselExampleIndicators" class="carousel slide col-lg-4 carousel-fade" data-ride="carousel">
+  <ol class="carousel-indicators">
+      {% for bill in detail_bills %}
+    <li data-target="#carouselExampleIndicators" data-slide-to="{{forloop.counter}}" class="{% if forloop.counter == 1 %}active{% endif %}"></li>
+
+  {% endfor %}
+  </ol>
+  <div class="carousel-inner">
+  {% for bill in detail_bills %}
+    <div class="carousel-item {% if forloop.counter == 1 %}active{% endif %}">
+        <a href="{{ bill.bill_photo.url }}" target="_blank">
+            <img src="{{ bill.bill_photo.url }}" class="d-block w-100" alt="Here is no any bills">
+        </a>
+    </div>
+  {% endfor %}
+   </div>
+  <a class="carousel-control-prev" href="#carouselExampleIndicators" role="button" data-slide="prev">
+    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+    <span class="sr-only">Previous</span>
+  </a>
+  <a class="carousel-control-next" href="#carouselExampleIndicators" role="button" data-slide="next">
+    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+    <span class="sr-only">Next</span>
+  </a>
+</div>
+
+</div>
+{% endif %}
 <script>
   function delete_question(index) {
      if (confirm('Delete record?')) {

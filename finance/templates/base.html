@@ -32,6 +32,7 @@
 {% url 'permissions:registration' as url_registration %}
 {% url 'finance:home' as url_home %}
 {% url 'finance:settings' request.user.id as url_settings %}
+{% url 'permissions:edit' as url_edit_info %}
 
 <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog" role="document">
@@ -43,7 +44,7 @@
         </button>
       </div>
       <div class="modal-body">
-        <form id="form_add_expenses" method="post" action="{{url_info}}">
+        <form id="form_add_expenses" method="post" action="{{ url_info }}">
           {% csrf_token %}
           {{form}}
         </form>
@@ -89,13 +90,15 @@
           <li class="nav-item">
             <a class="nav-link {% if url_settings == request.path %}active{% endif %}" href="{{ url_settings }}">Settings</a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link {% if url_edit_info == request.path %}active{% endif %}" href="{{ url_edit_info }}">Edit info</a>
+          </li>
           {% else %}
           <li class="nav-item">
 
             <a class="nav-link {% if url_registration == request.path %}active{% endif %}" href="{{url_registration}}">Registration</a>
           </li>
           <li class="nav-item">
-
             <a class="nav-link {% if url_login == request.path %}active{% endif %}" href="{{url_login}}">LogIn</a>
           </li>
           {% endif %}

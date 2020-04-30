@@ -1,10 +1,13 @@
 from django.contrib.auth import authenticate, login
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import LoginView, LogoutView, PasswordResetView, \
     PasswordResetConfirmView
+from django.shortcuts import render, redirect
 from django.urls import reverse, reverse_lazy
 from django.views.generic import CreateView
 from django.contrib.auth.models import User
-from .forms import AuthUserForm, RegistrationLoginForm, PasswordResetFormCustom, SetPasswordFormCustom
+from .forms import AuthUserForm, RegistrationLoginForm, PasswordResetFormCustom, SetPasswordFormCustom, EditInfo
+import functools
 
 
 # Create your views here.
@@ -50,3 +53,31 @@ class PasswordResetViewCustom(PasswordResetView):
 class PasswordResetConfirmViewCustom(PasswordResetConfirmView):
     success_url = reverse_lazy('permissions:password_reset_complete')
     form_class = SetPasswordFormCustom
+
+
+PREVIOUS_METHOD_POST = False
+
+
+@login_required
+def edit_info(request):
+    global PREVIOUS_METHOD_POST
+    template = 'accounts/edit_info.html'
+    successful = False
+    if request.method == 'POST':
+        edit_form = EditInfo(instance=request.user, data=request.POST)
+        if edit_form.is_valid():
+            edit_form.save()
+            PREVIOUS_METHOD_POST = True
+            return redirect('permissions:edit')
+
+    if PREVIOUS_METHOD_POST:
+        successful = True
+
+    edit_form = EditInfo(instance=request.user)
+    context_data = {
+        'edit_form': edit_form,
+        'successful_changed': successful,
+    }
+    PREVIOUS_METHOD_POST = False
+    return render(request, template, context_data)
+
