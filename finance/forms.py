@@ -17,10 +17,25 @@ class ExpenseAddForm(LoginRequiredMixin, forms.ModelForm):
             self.fields[field].widget.attrs['class'] = 'form-control'
 
 
+class EditExpenseForm(LoginRequiredMixin, forms.ModelForm):
+
+    class Meta:
+        model = FinancialExpenses
+        fields = ['expense_value', 'subcategory', 'comment', 'created']
+        widgets = {
+            'comment': forms.TextInput,
+            'created': forms.DateInput,
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            self.fields[field].widget.attrs['class'] = 'form-control'
+
+
 class AccountSettingsForm(LoginRequiredMixin, forms.ModelForm):
     class Meta:
         model = AccountSettings
-
         fields = ['limit_value', 'report']
 
     def __init__(self, *args, **kwargs):

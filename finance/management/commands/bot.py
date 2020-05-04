@@ -10,7 +10,7 @@ from telegram.utils.request import Request
 from finance.models import TelegramCredentials, SubCategories, FinancialExpenses, AccountSettings
 from django.contrib.auth.models import User
 from django.db.models import Sum
-from wallet.settings import TODAY_IS, PERMANENT_URL
+from wallet.settings import PERMANENT_URL
 import datetime
 import re
 

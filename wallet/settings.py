@@ -134,8 +134,9 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
 LOGIN_REDIRECT_URL = '/'
-# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
+PROXY_URL = 'https://telegg.ru/orig/bot'
 
 
 TODAY_IS = datetime.datetime.utcnow()

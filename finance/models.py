@@ -1,3 +1,5 @@
+import datetime
+
 from django.db import models
 from djmoney.models.fields import MoneyField
 from django.contrib.auth.models import User
@@ -18,6 +20,7 @@ def get_default_category():
 
 class Categories(models.Model):
     name = models.CharField(max_length=100, default=None, null=True, blank=True)
+    user = models.ManyToManyField(User, through='AccountSettings')
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
 
@@ -50,7 +53,7 @@ class FinancialExpenses(models.Model):
     comment = models.TextField(max_length=100, blank=True, default=None, null=True)
     publish = models.DateTimeField(default=timezone.now)
     updated = models.DateTimeField(auto_now=True)
-    created = models.DateTimeField(auto_now_add=True)
+    created = models.DateTimeField(default=datetime.datetime.utcnow())
 
     class Meta:
         verbose_name = "Financial expense"

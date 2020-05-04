@@ -1,12 +1,14 @@
 import calendar
+import datetime
 import os
 from django.contrib.auth.decorators import login_required
 from django.core.mail import EmailMessage
+from django.db.models import Sum, Count
 from django.http import HttpResponse
 from django.shortcuts import render
 from .models import Categories, FinancialExpenses, AccountSettings, Bills
 from django.urls import reverse
-from .forms import ExpenseAddForm, AccountSettingsForm, SendEmailForm, AddBill
+from .forms import ExpenseAddForm, AccountSettingsForm, SendEmailForm, AddBill, EditExpenseForm
 from django.contrib.auth.models import User
 from django.views.generic import CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -57,6 +59,10 @@ class LoginRequiredCustomMixin(LoginRequiredMixin):
     #     return super().dispatch(request, *args, **kwargs)
 
 
+SEND_EMAIL_MSG = None
+ERROR_OCCURRED = False
+
+
 class ExpenseAddView(LoginRequiredCustomMixin, CreateView):
 
     model = FinancialExpenses
@@ -65,19 +71,24 @@ class ExpenseAddView(LoginRequiredCustomMixin, CreateView):
 
     def get_context_data(self, **kwargs):
 
+        global SEND_EMAIL_MSG, ERROR_OCCURRED
+
         # identification of requested date
-        now = TODAY_IS
+        now = datetime.datetime.utcnow()
         year, month, day = now.year, now.month, now.day
         year = self.kwargs.get('year_filter') or year
         month = month_converter(self.kwargs.get('month_filter')) or month
 
-        # query to db to get all records for current month
+        # query to get all records for current month
         expenses_objects = FinancialExpenses.objects.filter(
             user__id=self.request.user.id, created__year=year,
             created__month=month).order_by('-created')
 
-        # query to db to get all current categories
+        # query to get all current categories
         categories_objects = Categories.objects.all().order_by('name')
+
+        # query to get all bills
+        bills_objects = Bills.objects.filter(user__id=self.request.user.id, created__year=year, created__month=month).values('created').annotate(value=Count('bill_photo'))
 
         # creation dict with next structure for daily report in each category:
         # coast_data = {current_date:
@@ -85,13 +96,20 @@ class ExpenseAddView(LoginRequiredCustomMixin, CreateView):
         #                            .....................,
         #                            {category_n: coast_n}
         coast_data = {
-            day.created.date(): {
+            expense.created.date(): {
                 category.name: 0 for category in categories_objects
-            } for day in expenses_objects
+            } for expense in expenses_objects
         }
 
+        # update coast data to get access to bills if didn't any expenses add
+        coast_data.update({
+            bills['created']: {
+                category.name: 0 for category in categories_objects
+            } for bills in bills_objects
+        })
+
         # creation dict for daily report with common coasts
-        total_day_coast = {day.created.date(): 0 for day in expenses_objects}
+        total_day_coast = {expense.created.date(): 0 for expense in expenses_objects}
 
         # creation dict for month report of coast in each category
         total_category_month_coast = {
@@ -131,11 +149,11 @@ class ExpenseAddView(LoginRequiredCustomMixin, CreateView):
                 for setting in AccountSettings.objects.filter(user__id=self.request.user.id).order_by('category__name')
             }
 
-            categories_for_report = AccountSettings.objects.filter(user__id=self.request.user.id, report=True)
+            settings_for_report = AccountSettings.objects.filter(user__id=self.request.user.id, report=True)
 
-            total_day_limits = sum(setting.limit_value for setting in categories_for_report)
+            total_day_limits = sum(setting.limit_value for setting in settings_for_report)
 
-            total_day_coasts = sum(coast_data.get(now.date(), {}).get(setting.category.name, 0) for setting in categories_for_report)
+            total_day_coasts = sum(coast_data.get(now.date(), {}).get(setting.category.name, 0) for setting in settings_for_report)
 
             # check if there no any coasts
             total_day_coasts = 0 if not total_day_coasts else total_day_coasts.amount
@@ -160,14 +178,23 @@ class ExpenseAddView(LoginRequiredCustomMixin, CreateView):
         kwargs['current_year'] = year
         kwargs['current_month'] = calendar.month_name[month]
         kwargs['limits'] = limit_values
-        user_data_to_send = {'pk': self.request.user.id, 'year': year, 'month': month}
-        kwargs['send_email_form'] = SendEmailForm(user_data_to_send)
+        kwargs['send_email_form'] = SendEmailForm({'pk': self.request.user.id, 'year': year, 'month': month})
         kwargs['add_bill_photo'] = AddBill()
+        kwargs['bills'] = {count['created']: count['value'] for count in bills_objects}
+        kwargs['send_email_msg'] = SEND_EMAIL_MSG
+        kwargs['error_occurred'] = ERROR_OCCURRED
+
+        SEND_EMAIL_MSG = None
+        ERROR_OCCURRED = False
 
         return super().get_context_data(**kwargs)
 
     def get_success_url(self):
-        return reverse('finance:info', args=[self.object.user.id])
+        success_url = self.request.POST.get('next', None)
+        if success_url:
+            return success_url
+        return reverse('finance:info',
+                       args=[self.request.user.id])
 
     def form_valid(self, form):
         self.object = form.save(commit=False)
@@ -215,7 +242,7 @@ class DetailDayView(LoginRequiredCustomMixin, CreateView):
 class DetailUpdateView(LoginRequiredCustomMixin, UpdateView):
     model = FinancialExpenses
     template_name = 'users/detail.html'
-    form_class = ExpenseAddForm
+    form_class = EditExpenseForm
 
     def get_context_data(self, **kwargs):
         kwargs['update_func'] = True
@@ -281,6 +308,11 @@ class SettingsUpdateView(LoginRequiredCustomMixin, UpdateView):
 
 @login_required
 def send_email(request, pk):
+
+    global SEND_EMAIL_MSG, ERROR_OCCURRED
+
+    ERROR_OCCURRED = True
+
     if request.method == "POST":
         form = SendEmailForm(request.POST)
         if form.is_valid():
@@ -305,10 +337,11 @@ def send_email(request, pk):
                         file.write('\n'.join(info_data))
 
                     send_email_custom(subject, message, EMAIL_HOST_USER, [user_email, ], file_to_send_url)
-
-                except Exception:
-                    pass
-
+                    SEND_EMAIL_MSG = 'Successful send on E-mail'
+                    ERROR_OCCURRED = False
+                except Exception as e:
+                    print(e)
+                    SEND_EMAIL_MSG = 'Something went wrong'
             return redirect('finance:info-detail',
                             pk=request.user.id,
                             year_filter=cd['year'],
@@ -318,12 +351,18 @@ def send_email(request, pk):
 
 
 def add_bill_photo(request, pk):
+
+    redirect_url = request.POST.get('next', None)
+
     if request.method == "POST":
         add_bill_form = AddBill(data=request.POST,
                                 files=request.FILES)
+        files_list = request.FILES.getlist('bill_photo')
         if add_bill_form.is_valid():
-            new_bill = add_bill_form.save(commit=False)
-            new_bill.user = User.objects.get(pk=pk)
-            add_bill_form.save()
-    return redirect('finance:info',
-                    pk=request.user.id)
+            for file in files_list:
+                Bills.objects.create(
+                    user=User.objects.get(pk=pk),
+                    bill_photo=file,
+                )
+
+    return redirect(redirect_url) if redirect_url else redirect('finance:info', pk=request.user.id)

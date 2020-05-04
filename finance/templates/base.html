@@ -8,6 +8,7 @@
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+
     <link href="{% static "styles.css" %}" rel="stylesheet">
     <style>
        .background-color {
@@ -33,6 +34,7 @@
 {% url 'finance:home' as url_home %}
 {% url 'finance:settings' request.user.id as url_settings %}
 {% url 'permissions:edit' as url_edit_info %}
+{% url 'finance:add-bill' request.user.id as url_add_bill %}
 
 <div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
   <div class="modal-dialog" role="document">
@@ -47,6 +49,7 @@
         <form id="form_add_expenses" method="post" action="{{ url_info }}">
           {% csrf_token %}
           {{form}}
+          <input type="hidden" name="next" value="{{request.path}}">
         </form>
       </div>
       <div class="modal-footer">
@@ -57,58 +60,155 @@
   </div>
 </div>
 
-
-  <nav class="navbar navbar-dark bg-primary">
-    <nav class="navbar navbar-expand-lg">
-      <a class="navbar-brand" href="/">Wallet</a>
-      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-
-      <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <ul class="navbar-nav mr-auto">
-          <li class="nav-item">
-
-            <a class="nav-link {% if url_home == request.path %}active{% endif %}" href={{url_home}}>Home<span class="sr-only">(current)</span></a>
-          </li>
-        </ul>
-        <ul class="navbar-nav navbar-nav ml-md-auto">
-          {% if request.user.is_authenticated %}
-
-          {% block AddExpenses %}
-          <li class="nav-item">
-            <a class="nav-link" href="#exampleModal" data-toggle="modal" data-target="#exampleModal">Add expenses</a>
-          </li>
-          {% endblock AddExpenses %}
-          <li class="nav-item">
-
-            <a class="nav-link {% if url_logout == request.path %}active{% endif %}" href="{{url_logout}}">LogOut</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% if url_info == request.path %}active{% endif %}" href="{{ url_info }}">Info</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% if url_settings == request.path %}active{% endif %}" href="{{ url_settings }}">Settings</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% if url_edit_info == request.path %}active{% endif %}" href="{{ url_edit_info }}">Edit info</a>
-          </li>
-          {% else %}
-          <li class="nav-item">
-
-            <a class="nav-link {% if url_registration == request.path %}active{% endif %}" href="{{url_registration}}">Registration</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link {% if url_login == request.path %}active{% endif %}" href="{{url_login}}">LogIn</a>
-          </li>
-          {% endif %}
-
-        </ul>
-
-
+<div class="modal fade" id="exampleModal1" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel1" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel1">Add Bill</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
       </div>
-    </nav>
-  </nav>
+      <div class="modal-body">
+        <form id="form_add_bill" method="post" action="{{ url_add_bill }}" enctype="multipart/form-data">
+          <input id='files' type="file" name="bill_photo" accept="image/*" id="id_bill_photo" multiple="multiple">
+          <input type="hidden" name="next" value="{{request.path}}">
+          {% csrf_token %}
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button form="form_add_bill" type="submit" class="btn btn-primary">Submit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+{#  <nav class="navbar navbar-dark bg-primary">#}
+{#    <nav class="navbar navbar-expand-lg">#}
+{#      <a class="navbar-brand" href="/">Wallet</a>#}
+{#      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">#}
+{#        <span class="navbar-toggler-icon"></span>#}
+{#      </button>#}
+{##}
+{#      <div class="collapse navbar-collapse" id="navbarSupportedContent">#}
+{#        <ul class="navbar-nav mr-auto">#}
+{#          <li class="nav-item">#}
+{##}
+{#            <a class="nav-link {% if url_home == request.path %}active{% endif %}" href={{url_home}}>Home<span class="sr-only">(current)</span></a>#}
+{#          </li>#}
+{#        </ul>#}
+{#        <ul class="navbar-nav navbar-nav ml-md-auto">#}
+{#          {% if request.user.is_authenticated %}#}
+{##}
+{#          <li class="nav-item">#}
+{#            <a class="nav-link {% if url_logout == request.path %}active{% endif %}" href="{{url_logout}}">LogOut</a>#}
+{#          </li>#}
+{##}
+{#          <li class="nav-item">#}
+{#            <a class="nav-link {% if url_edit_info == request.path %}active{% endif %}" href="{{ url_edit_info }}">Edit personal info</a>#}
+{#          </li>#}
+{##}
+{#          <li class="nav-item">#}
+{#            <a class="nav-link {% if url_settings == request.path %}active{% endif %}" href="{{ url_settings }}">Report settings</a>#}
+{#          </li>#}
+{#        </ul>#}
+{#        <ul class="navbar-nav navbar-nav text-right">#}
+{#          <li class="nav-item">#}
+{#            <a class="nav-link {% if url_info == request.path %}active{% endif %}" href="{{ url_info }}">Info</a>#}
+{#          </li>#}
+{##}
+{#          {% block AddExpenses %}#}
+{#          <li class="nav-item">#}
+{#            <a class="nav-link" href="#exampleModal" data-toggle="modal" data-target="#exampleModal">Add expenses</a>#}
+{#          </li>#}
+{#          <li class="nav-item">#}
+{#            <a class="nav-link" href="#exampleModal1" data-toggle="modal" data-target="#exampleModal1">Add Bill</a>#}
+{#          </li>#}
+{#          {% endblock AddExpenses %}#}
+{##}
+{#          {% else %}#}
+{#          <li class="nav-item">#}
+{##}
+{#            <a class="nav-link {% if url_registration == request.path %}active{% endif %}" href="{{url_registration}}">Registration</a>#}
+{#          </li>#}
+{#          <li class="nav-item">#}
+{#            <a class="nav-link {% if url_login == request.path %}active{% endif %}" href="{{url_login}}">LogIn</a>#}
+{#          </li>#}
+{#          {% endif %}#}
+{##}
+{#        </ul>#}
+{##}
+{##}
+{#      </div>#}
+{#    </nav>#}
+{#  </nav>#}
+
+<nav class="navbar navbar-expand-md navbar-dark bg-primary">
+
+    <div class="navbar-collapse collapse w-100 order-1 order-md-0 dual-collapse2">
+        <ul class="navbar-nav mr-auto">
+            <li class="nav-item active">
+                <a class="navbar-brand" href="/">Wallet</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if url_home == request.path %}active{% endif %}" href={{url_home}}>Home<span class="sr-only">(current)</span></a>
+            </li>
+
+            {% if request.user.is_authenticated %}
+            <li class="nav-item">
+                <a class="nav-link {% if url_info == request.path %}active{% endif %}" href="{{ url_info }}">Info</a>
+            </li>
+            {% block AddExpenses %}
+            <li class="nav-item">
+                <a class="nav-link" href="#exampleModal" data-toggle="modal" data-target="#exampleModal">Add expenses</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#exampleModal1" data-toggle="modal" data-target="#exampleModal1">Add Bill</a>
+            </li>
+            {% endblock AddExpenses %}
+            {% else %}
+            <li class="nav-item">
+                <a class="nav-link {% if url_registration == request.path %}active{% endif %}" href="{{url_registration}}">Registration</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if url_login == request.path %}active{% endif %}" href="{{url_login}}">LogIn</a>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div class="navbar-collapse collapse w-100 order-3 dual-collapse2">
+        <ul class="navbar-nav ml-auto">
+            {% if request.user.is_authenticated %}
+            <li class="nav-item">
+                <a class="nav-link {% if url_edit_info == request.path %}active{% endif %}" href="{{ url_edit_info }}">Edit personal info</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if url_settings == request.path %}active{% endif %}" href="{{ url_settings }}">Report settings</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if url_logout == request.path %}active{% endif %}" href="{{url_logout}}">LogOut</a>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+</nav>
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
   {% block content %}
