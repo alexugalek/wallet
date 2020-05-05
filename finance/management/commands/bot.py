@@ -78,6 +78,9 @@ def get_message(text, chat_id):
         if subcategory not in subcategories_names:
             return f"Category --{subcategory}-- doesn't exist"
 
+        if not value:
+            return f"We don't accept 0 value"
+
         # try to save data to db
         try:
             expense = FinancialExpenses()

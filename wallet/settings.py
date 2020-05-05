@@ -135,7 +135,15 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
 LOGIN_REDIRECT_URL = '/'
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_HOST_USER = 'my'
+EMAIL_HOST_PASSWORD = 'my'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
 
+# Telegram bot settings
+
+TOKEN = '946100261:AAGEoXG4xienoDYUbupjvWgJ_gh0x1mw7pI'
 PROXY_URL = 'https://telegg.ru/orig/bot'
 
 

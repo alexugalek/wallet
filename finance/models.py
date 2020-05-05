@@ -49,7 +49,7 @@ class SubCategories(models.Model):
 class FinancialExpenses(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    expense_value = MoneyField(max_digits=14, decimal_places=2, default_currency='USD', default=0, currency_choices=(('USD', 'USD'), ))
+    expense_value = MoneyField(max_digits=14, decimal_places=2, default_currency='USD', currency_choices=(('USD', 'USD'), ))
     subcategory = models.ForeignKey(SubCategories, on_delete=models.CASCADE, null=True, default=get_default_subcategory)
     comment = models.TextField(max_length=100, blank=True, default=None, null=True)
     updated = models.DateTimeField(auto_now=True)

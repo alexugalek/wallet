@@ -223,6 +223,17 @@
       </div>
     {% endif %}
 
+    {% if bad_upload %}
+      <div id="my-alert123">
+        <div id="inner-message" class="alert alert-danger mt-3" role="alert" align="center">
+          {% for name_error, error in bad_upload.items %}
+              {{ error }}
+           {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+
 
     <script>
       setTimeout(()=>{

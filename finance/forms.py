@@ -18,6 +18,12 @@ class ExpenseAddForm(LoginRequiredMixin, forms.ModelForm):
         for field in self.fields:
             self.fields[field].widget.attrs['class'] = 'form-control'
 
+    def clean_expense_value(self):
+        cd = self.cleaned_data
+        if not cd['expense_value'].amount:
+            raise forms.ValidationError("We don't accept 0 value")
+        return cd['expense_value']
+
 
 class EditExpenseForm(LoginRequiredMixin, forms.ModelForm):
 
@@ -33,6 +39,12 @@ class EditExpenseForm(LoginRequiredMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field in self.fields:
             self.fields[field].widget.attrs['class'] = 'form-control'
+
+    def clean_expense_value(self):
+        cd = self.cleaned_data
+        if not cd['expense_value'].amount:
+            raise forms.ValidationError("We don't accept 0 value")
+        return cd['expense_value']
 
 
 class AccountSettingsForm(LoginRequiredMixin, forms.ModelForm):

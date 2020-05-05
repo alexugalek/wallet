@@ -2,6 +2,7 @@ from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm, \
     SetPasswordForm
 from django import forms
 from django.contrib.auth.models import User
+import re
 
 
 class AuthUserForm(AuthenticationForm, forms.ModelForm):
@@ -41,6 +42,12 @@ class RegistrationLoginForm(forms.ModelForm):
         if len(cd['password']) < 5:
             raise forms.ValidationError('Please enter password with more than 4 symbols')
         return cd['password']
+
+    def clean_username(self):
+        cd = self.cleaned_data
+        if not re.fullmatch(r'[0-9a-zA-Z_]*', cd['username']):
+            raise forms.ValidationError('Your username should contains only latin symbols, numbers and underscore')
+        return cd['username']
 
     def save(self, commit=True):
         user = super().save(commit=False)

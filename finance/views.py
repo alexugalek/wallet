@@ -47,16 +47,19 @@ def month_converter(month):
 SEND_EMAIL_MSG = None
 ERROR_OCCURRED = False
 FILES_ERROR = None
+BAD_UPLOAD = None
 
 
 def home(request):
-    global FILES_ERROR
+    global FILES_ERROR, BAD_UPLOAD
     context = {
         'form': ExpenseAddForm(),
-        'files_errors': FILES_ERROR
+        'files_errors': FILES_ERROR,
+        'bad_upload': BAD_UPLOAD,
     }
     template = 'home.html'
     FILES_ERROR = None
+    BAD_UPLOAD = None
     return render(request, template, context)
 
 
@@ -71,9 +74,11 @@ class LoginRequiredCustomMixin(LoginRequiredMixin):
 class ErrorFilesMessage(CreateView):
 
     def get_context_data(self, **kwargs):
-        global FILES_ERROR
+        global FILES_ERROR, BAD_UPLOAD
         kwargs['files_errors'] = FILES_ERROR
+        kwargs['bad_upload'] = BAD_UPLOAD
         FILES_ERROR = None
+        BAD_UPLOAD = None
         return super().get_context_data(**kwargs)
 
 
@@ -85,7 +90,7 @@ class ExpenseAddView(LoginRequiredCustomMixin, ErrorFilesMessage):
 
     def get_context_data(self, **kwargs):
 
-        global SEND_EMAIL_MSG, ERROR_OCCURRED, FILES_ERROR
+        global SEND_EMAIL_MSG, ERROR_OCCURRED, FILES_ERROR, BAD_UPLOAD
 
         # identification of requested date
         now = datetime.datetime.utcnow()
@@ -209,6 +214,18 @@ class ExpenseAddView(LoginRequiredCustomMixin, ErrorFilesMessage):
             return success_url
         return reverse('finance:info',
                        args=[self.request.user.id])
+
+    def form_invalid(self, form):
+        global BAD_UPLOAD
+
+        super().form_invalid(form)
+
+        BAD_UPLOAD = form.errors
+
+        url_to_redirect = self.request.POST.get('next', None)
+        if url_to_redirect:
+            return redirect(url_to_redirect)
+        return redirect('finance:info', pk=self.request.user.id)
 
     def form_valid(self, form):
         self.object = form.save(commit=False)
