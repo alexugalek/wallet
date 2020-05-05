@@ -13,6 +13,18 @@
 .border-color {
     border-color: lightslategrey;
 }
+#my-alert-mail {
+           position: fixed;
+           top: 0;
+           margin-left: auto;
+           margin-right: auto;
+           align-items: center;
+           width: 100%;
+       }
+#inner-message-mail {
+           margin: 0 auto;
+       }
+
 </style>
 <script>
     var select1, select2, value1, value2;
@@ -27,7 +39,7 @@
 </script>
 <script>
   setTimeout(()=>{
-    var alertId = document.getElementById('my-alert')
+    var alertId = document.getElementById('my-alert-mail')
     alertId.classList.add('modal')
   },3000);
 </script>
@@ -91,14 +103,15 @@
     <button form="form_send_email" type="submit" class="btn border-color background-color text-color">Send {{ current_month }} statistic to Email</button>
   </div>
 
-  <div class="col-auto my-1 i">
+
   {% if send_email_msg %}
-    <div id="my-alert" align="center">
-      <div class="{% if error_occurred %}alert-color_unsuccessful{% else %}alert-color_successful{% endif %}" role="alert" align="center">
+    <div id="my-alert-mail" align="center">
+      <div id="inner-message-mail" class="alert {% if error_occurred %}alert-danger{% else %}alert-primary{% endif %} mt-3 ml-3" role="alert" align="center">
         {{ send_email_msg }}
       </div>
     </div>
   {% endif %}
-  </div>
+
+
 
 </div>

@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.mail import EmailMessage
 from django.db.models import Sum, Count
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from .models import Categories, FinancialExpenses, AccountSettings, Bills
 from django.urls import reverse
 from .forms import ExpenseAddForm, AccountSettingsForm, SendEmailForm, AddBill, EditExpenseForm
@@ -14,6 +14,7 @@ from django.views.generic import CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect
 from wallet.settings import TODAY_IS, BASE_DIR, EMAIL_HOST_USER
+from django.contrib import messages
 
 
 def send_email_custom(subject, message, from_email, to_emails, attachment=None, tmp_attachments=True):
@@ -43,11 +44,19 @@ def month_converter(month):
     return months_dict.get(month)
 
 
+SEND_EMAIL_MSG = None
+ERROR_OCCURRED = False
+FILES_ERROR = None
+
+
 def home(request):
+    global FILES_ERROR
     context = {
-        'form': ExpenseAddForm()
+        'form': ExpenseAddForm(),
+        'files_errors': FILES_ERROR
     }
     template = 'home.html'
+    FILES_ERROR = None
     return render(request, template, context)
 
 
@@ -59,11 +68,16 @@ class LoginRequiredCustomMixin(LoginRequiredMixin):
     #     return super().dispatch(request, *args, **kwargs)
 
 
-SEND_EMAIL_MSG = None
-ERROR_OCCURRED = False
+class ErrorFilesMessage(CreateView):
+
+    def get_context_data(self, **kwargs):
+        global FILES_ERROR
+        kwargs['files_errors'] = FILES_ERROR
+        FILES_ERROR = None
+        return super().get_context_data(**kwargs)
 
 
-class ExpenseAddView(LoginRequiredCustomMixin, CreateView):
+class ExpenseAddView(LoginRequiredCustomMixin, ErrorFilesMessage):
 
     model = FinancialExpenses
     template_name = 'users/info.html'
@@ -71,7 +85,7 @@ class ExpenseAddView(LoginRequiredCustomMixin, CreateView):
 
     def get_context_data(self, **kwargs):
 
-        global SEND_EMAIL_MSG, ERROR_OCCURRED
+        global SEND_EMAIL_MSG, ERROR_OCCURRED, FILES_ERROR
 
         # identification of requested date
         now = datetime.datetime.utcnow()
@@ -82,7 +96,7 @@ class ExpenseAddView(LoginRequiredCustomMixin, CreateView):
         # query to get all records for current month
         expenses_objects = FinancialExpenses.objects.filter(
             user__id=self.request.user.id, created__year=year,
-            created__month=month).order_by('-created')
+            created__month=month)
 
         # query to get all current categories
         categories_objects = Categories.objects.all().order_by('name')
@@ -171,7 +185,7 @@ class ExpenseAddView(LoginRequiredCustomMixin, CreateView):
             limit_values = None
 
         kwargs['categories_obj'] = categories_objects
-        kwargs['coast_data'] = coast_data
+        kwargs['coast_data'] = {key: coast_data[key] for key in reversed(sorted(coast_data))}
         kwargs['total_day_coast'] = total_day_coast
         kwargs['total_month_coast'] = total_month_coast
         kwargs['total_category_month_coast'] = total_category_month_coast
@@ -203,7 +217,7 @@ class ExpenseAddView(LoginRequiredCustomMixin, CreateView):
         return super().form_valid(form)
 
 
-class DetailDayView(LoginRequiredCustomMixin, CreateView):
+class DetailDayView(LoginRequiredCustomMixin, ErrorFilesMessage):
     model = FinancialExpenses
     template_name = 'users/detail.html'
     form_class = ExpenseAddForm
@@ -216,6 +230,14 @@ class DetailDayView(LoginRequiredCustomMixin, CreateView):
             user__id=self.request.user.id, created__year=year_request,
             created__month=month_request, created__day=day_request
         )
+        detail_bills = Bills.objects.filter(
+            user__id=self.request.user.id, created__year=year_request,
+            created__month=month_request, created__day=day_request
+        )
+        for bill in detail_bills:
+            if not os.path.isfile(f'{BASE_DIR}{bill.bill_photo.url}'):
+                Bills.objects.filter(id=bill.id).delete()
+
         detail_bills = Bills.objects.filter(
             user__id=self.request.user.id, created__year=year_request,
             created__month=month_request, created__day=day_request
@@ -245,8 +267,11 @@ class DetailUpdateView(LoginRequiredCustomMixin, UpdateView):
     form_class = EditExpenseForm
 
     def get_context_data(self, **kwargs):
+        global FILES_ERROR
         kwargs['update_func'] = True
         kwargs['formatted_day'] = self.object.created.strftime("%d-%m-%Y")
+        kwargs['files_errors'] = FILES_ERROR
+        FILES_ERROR = None
         return super().get_context_data(**kwargs)
 
     def get_success_url(self):
@@ -351,12 +376,14 @@ def send_email(request, pk):
 
 
 def add_bill_photo(request, pk):
+    global FILES_ERROR
 
     redirect_url = request.POST.get('next', None)
 
     if request.method == "POST":
         add_bill_form = AddBill(data=request.POST,
                                 files=request.FILES)
+
         files_list = request.FILES.getlist('bill_photo')
         if add_bill_form.is_valid():
             for file in files_list:
@@ -364,5 +391,8 @@ def add_bill_photo(request, pk):
                     user=User.objects.get(pk=pk),
                     bill_photo=file,
                 )
+            FILES_ERROR = None
+        else:
+            FILES_ERROR = add_bill_form.errors
 
     return redirect(redirect_url) if redirect_url else redirect('finance:info', pk=request.user.id)

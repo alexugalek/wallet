@@ -1,4 +1,5 @@
 {% load static %}
+{% load custom_tags %}
 <!doctype html>
 <html lang="en">
   <head>
@@ -19,6 +20,17 @@
        }
        .danger-text-color {
            color: darkred;
+       }
+       #my-alert123 {
+           position: fixed;
+           top: 0;
+           margin-left: auto;
+           margin-right: auto;
+           align-items: center;
+           width: 100%;
+       }
+       #inner-message {
+           margin: 0 auto;
        }
     </style>
 
@@ -197,22 +209,27 @@
     </div>
 </nav>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   {% block content %}
   {% endblock content %}
+{#  {% include 'footer.html' %}#}
+
+    {% if files_errors %}
+      <div id="my-alert123">
+        <div id="inner-message" class="alert alert-danger mt-3" role="alert" align="center">
+          {% for error_name, error in files_errors.items %}
+              {{ error }}
+           {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+
+    <script>
+      setTimeout(()=>{
+        var alertId = document.getElementById('my-alert123')
+        alertId.classList.add('modal')
+      },3000);
+    </script>
 
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->

@@ -67,11 +67,11 @@
 
   {% endfor %}
   </ol>
-  <div class="carousel-inner">
+  <div class="carousel-inner" style=" width:100%; height: 500px !important;">
   {% for bill in detail_bills %}
-    <div class="carousel-item {% if forloop.counter == 1 %}active{% endif %}">
+    <div class="carousel-item {% if forloop.counter == 1 %}active{% endif %}" align="center">
         <a href="{{ bill.bill_photo.url }}" target="_blank">
-            <img src="{{ bill.bill_photo.url }}" class="d-block w-100" alt="Here is no any bills">
+            <img src="{{ bill.bill_photo.url }}" class="d-block w-100 mt-20" alt="Here is no any bills">
         </a>
     </div>
   {% endfor %}
@@ -85,7 +85,6 @@
     <span class="sr-only">Next</span>
   </a>
 </div>
-
 </div>
 {% endif %}
 <script>

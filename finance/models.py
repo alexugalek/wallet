@@ -1,5 +1,6 @@
 import datetime
 
+from PIL import Image
 from django.db import models
 from djmoney.models.fields import MoneyField
 from django.contrib.auth.models import User
@@ -51,9 +52,9 @@ class FinancialExpenses(models.Model):
     expense_value = MoneyField(max_digits=14, decimal_places=2, default_currency='USD', default=0, currency_choices=(('USD', 'USD'), ))
     subcategory = models.ForeignKey(SubCategories, on_delete=models.CASCADE, null=True, default=get_default_subcategory)
     comment = models.TextField(max_length=100, blank=True, default=None, null=True)
-    publish = models.DateTimeField(default=timezone.now)
     updated = models.DateTimeField(auto_now=True)
-    created = models.DateTimeField(default=datetime.datetime.utcnow())
+    created = models.DateTimeField(default=timezone.now)
+    publish = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = "Financial expense"
@@ -118,3 +119,23 @@ class Bills(models.Model):
 
     def __str__(self):
         return '{}: {}'.format(self.user.username, self.id)
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+
+        if not self.bill_photo:
+            return
+
+        super().save()
+        image = Image.open(self.bill_photo)
+        (width, height) = image.size
+        factor = height/width
+        if width >= height:
+            max_width = width if width < 1200 else 1200
+            max_height = max_width * factor
+        else:
+            max_height = height if height < 1200 else 1200
+            max_width = max_height / factor
+        size = (int(max_width), int(max_height))
+        image = image.resize(size, Image.ANTIALIAS)
+        image.save(self.bill_photo.path)

@@ -1,4 +1,6 @@
 from django import forms
+from django.core.exceptions import ValidationError
+
 from .models import FinancialExpenses, AccountSettings, Bills
 from django.contrib.auth.mixins import LoginRequiredMixin
 
@@ -55,7 +57,12 @@ class AddBill(forms.ModelForm):
         model = Bills
         fields = ['bill_photo']
 
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-    #     for field in self.fields:
-    #         self.fields[field].widget.attrs['class'] = 'form-control'
+    # Add some custom validation to our image field
+    def clean_bill_photo(self):
+        image = self.cleaned_data.get('bill_photo', False)
+        if image:
+            if image.size > 10 * 1024 * 1024:
+                raise forms.ValidationError("Image file too large ( > 10mb )")
+            return image
+        else:
+            raise forms.ValidationError("Couldn't read uploaded image")
