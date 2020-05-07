@@ -6,77 +6,85 @@
 
 <div class="table-responsive">
   <table class="table table-hover table-dark">
-   {% if limits is not None %}
-  <thead>
-    <tr>
-      <th scope="col"></th>
-      <th scope="col"></th>
-      <th scope="col"></th>
-      {% for category in categories_obj %}
-        <th scope="col">{{category.name}}</th>
+       {% if limits is not None %}
+          <thead>
+            <tr>
+              <th scope="col"></th>
+              <th scope="col"></th>
+              <th scope="col"></th>
+              {% for category in categories_obj %}
+                <th scope="col">{{category.name}}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+              <tr>
+                <th scope="row">{{ balance_message }}</th>
+                <th scope="col"></th>
+                <th scope="col" {% if daily_balance < 0 %} class="danger-text-color"{% endif %}>
+                    ${{ daily_balance }}
+                </th>
+
+                  {% for category in categories_obj %}
+                      {% with limits=limits_included_in_report|get_limit_value:category.id %}
+                          <th scope="col" {% if limits < 0 %} class="danger-text-color"{% endif %}>
+                              {% if limits != '-' %}${% endif %}{{ limits }}
+                          </th>
+                      {% endwith %}
+                  {% endfor %}
+
+              </tr>
+          </tbody>
+       {% endif %}
+
+
+
+      <thead class="text-color">
+        <tr>
+          <th scope="col"></th>
+          <th scope="col">Bills</th>
+          <th scope="col">Expense value</th>
+
+              {% for category in categories_obj %}
+                <th scope="col">{{category.name}}</th>
+              {% endfor %}
+
+        </tr>
+      </thead>
+      <tbody class="text-color">
+
+      <tr>
+        <th scope="row">Total month</th>
+        <th scope="row"></th>
+        <th scope="col">${{total_monthly_expenses}}</th>
+
+          {% for category in categories_obj %}
+              <th scope="col">${{ monthly_expenses|get_month_value:category.id }}</th>
+          {% endfor %}
+
+      </tr>
+
+      {% for day, expenses in daily_expenses.items %}
+        <tr>
+          {% url 'finance:detail' request.user.id day|date:'d-m-Y' as finance_detail_user %}
+          <th scope="row"><a href="{{ finance_detail_user }}" class="text-link-color">{{day}}</a></th>
+          <th scope="col">{% if bills|get_item:day %}{{bills|get_item:day}}{% else %}-{% endif %}</th>
+          <th scope="col">
+              {% with total_daily=total_daily_expenses|get_daily_value:day %}
+                  {% if total_daily != '-' %}${% endif %}{{ total_daily }}
+              {% endwith %}
+          </th>
+
+          {% for category in categories_obj %}
+              {% with expense=expenses|get_daily_value_in_category:category.id %}
+                  <th scope="col">{% if expense != '-' %}${% endif %}{{ expense }}</th>
+              {% endwith %}
+          {% endfor %}
+
+        </tr>
       {% endfor %}
-    </tr>
-  </thead>
-  <tbody>
 
-
-  <tr>
-    <th scope="row">{{ balance_message }}</th>
-    <th scope="col"></th>
-    <th scope="col" {% if day_limits < 0 %} class="danger-text-color"{% endif %}>${{ day_limits }}</th>
-      {% for category, value in limits.items %}
-         <th scope="col" {% if value.amount < 0 %} class="danger-text-color"{% endif %}>{{value}}</th>
-      {% endfor %}
-  </tr>
-
-  </tbody>
-
-{% endif %}
-
-
-{#<div class="table-responsive">#}
-{#  <table class="table table-hover table-dark">#}
-  <thead class="text-color">
-    <tr>
-      <th scope="col"></th>
-      <th scope="col">Bills</th>
-      <th scope="col">Expense value</th>
-      {% for category in categories_obj %}
-        <th scope="col">{{category.name}}</th>
-      {% endfor %}
-    </tr>
-  </thead>
-  <tbody class="text-color">
-
-  <tr>
-    <th scope="row">Total month</th>
-    <th scope="row"></th>
-    <th scope="col">{{total_month_coast}}</th>
-      {% for category, value in total_category_month_coast.items %}
-         <th scope="col">{{value}}</th>
-      {% endfor %}
-  </tr>
-
-  {% for day, categories in coast_data.items %}
-    <tr>
-      {% url 'finance:detail' request.user.id day|date:'d-m-Y' as finance_detail_user %}
-      <th scope="row"><a href="{{ finance_detail_user }}" class="text-link-color">{{day}}</a></th>
-      <th scope="col">{% if bills|get_item:day %}{{bills|get_item:day}}{% else %}-{% endif %}</th>
-      <th scope="col">{% if total_day_coast|get_item:day %}{{total_day_coast|get_item:day}}{% else %}-{% endif %}</th>
-      {% for category, value in categories.items %}
-          {% if value %}
-              <th scope="col">{{value}}</th>
-          {% else %}
-              <th scope="col">-</th>
-          {% endif %}
-      {% endfor %}
-    </tr>
-  {% endfor %}
-
-  </tbody>
-{#</table>#}
-{#</div>#}
-    </table>
+      </tbody>
+  </table>
 </div>
-
 {% endblock %}

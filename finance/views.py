@@ -5,7 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.mail import EmailMessage
 from django.db.models import Sum, Count
 from django.http import HttpResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render
 from .models import Categories, FinancialExpenses, AccountSettings, Bills
 from django.urls import reverse
 from .forms import ExpenseAddForm, AccountSettingsForm, SendEmailForm, AddBill, EditExpenseForm
@@ -13,8 +13,7 @@ from django.contrib.auth.models import User
 from django.views.generic import CreateView, UpdateView, DeleteView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import redirect
-from wallet.settings import TODAY_IS, BASE_DIR, EMAIL_HOST_USER
-from django.contrib import messages
+from wallet.settings import BASE_DIR, EMAIL_HOST_USER
 
 
 def send_email_custom(subject, message, from_email, to_emails, attachment=None, tmp_attachments=True):
@@ -65,10 +64,6 @@ def home(request):
 
 class LoginRequiredCustomMixin(LoginRequiredMixin):
     pass
-    # def dispatch(self, request, *args, **kwargs):
-    #     if not request.user.is_authenticated:
-    #         return redirect('login')
-    #     return super().dispatch(request, *args, **kwargs)
 
 
 class ErrorFilesMessage(CreateView):
@@ -98,59 +93,8 @@ class ExpenseAddView(LoginRequiredCustomMixin, ErrorFilesMessage):
         year = self.kwargs.get('year_filter') or year
         month = month_converter(self.kwargs.get('month_filter')) or month
 
-        # query to get all records for current month
-        expenses_objects = FinancialExpenses.objects.filter(
-            user__id=self.request.user.id, created__year=year,
-            created__month=month)
-
-        # query to get all current categories
+        # queryset to get all categories
         categories_objects = Categories.objects.all().order_by('name')
-
-        # query to get all bills
-        bills_objects = Bills.objects.filter(user__id=self.request.user.id, created__year=year, created__month=month).values('created').annotate(value=Count('bill_photo'))
-
-        # creation dict with next structure for daily report in each category:
-        # coast_data = {current_date:
-        #                            {category_1: coast_1},
-        #                            .....................,
-        #                            {category_n: coast_n}
-        coast_data = {
-            expense.created.date(): {
-                category.name: 0 for category in categories_objects
-            } for expense in expenses_objects
-        }
-
-        # update coast data to get access to bills if didn't any expenses add
-        coast_data.update({
-            bills['created']: {
-                category.name: 0 for category in categories_objects
-            } for bills in bills_objects
-        })
-
-        # creation dict for daily report with common coasts
-        total_day_coast = {expense.created.date(): 0 for expense in expenses_objects}
-
-        # creation dict for month report of coast in each category
-        total_category_month_coast = {
-            category.name: 0 for category in categories_objects
-        }
-
-        # total month coasts
-        total_month_coast = 0
-
-        # counting all expenses
-        for day, categories in coast_data.items():
-            for category, value in categories.items():
-                day_category_fields = expenses_objects.filter(
-                    subcategory__category__name=category, created__date=day)
-
-                for field in day_category_fields:
-
-                    coast = field.expense_value
-                    coast_data[day][category] += coast
-                    total_month_coast += coast
-                    total_day_coast[day] += coast
-                    total_category_month_coast[category] += coast
 
         # check account setting for update
         for category in categories_objects:
@@ -161,39 +105,99 @@ class ExpenseAddView(LoginRequiredCustomMixin, ErrorFilesMessage):
                 account.category = category
                 account.save()
 
+        # query to get all bills
+        bills_objects = Bills.objects.filter(
+            user__id=self.request.user.id, created__year=year,
+            created__month=month).values('created').annotate(value=Count('bill_photo')
+        )
+
+        daily_expenses = {
+            bills_object['created']: {0: 0} for bills_object in bills_objects
+        }
+
+        daily_expenses_queryset = FinancialExpenses.objects.filter(
+            user__id=self.request.user.id,
+            created__year=year,
+            created__month=month,
+        ).values('created__date', 'subcategory__category').annotate(value=Sum('expense_value'))
+
+        daily_expenses.update({
+            date['created__date']: {} for date in daily_expenses_queryset
+        })
+
+        for expense in daily_expenses_queryset:
+            daily_expenses[expense['created__date']].update({
+                expense['subcategory__category']: round(expense['value'], 2)
+            })
+
+        kwargs['daily_expenses'] = {
+            key: daily_expenses[key] for key in reversed(sorted(daily_expenses))
+        }
+
+        total_daily_expenses = {
+            date: sum(expenses.values()) or '-' for date, expenses in daily_expenses.items()
+        }
+
+        kwargs['total_daily_expenses'] = total_daily_expenses
+
+        monthly_expenses_queryset = FinancialExpenses.objects.filter(
+            user__id=self.request.user.id,
+            created__year=year,
+            created__month=month,
+        ).values('subcategory__category').annotate(value=Sum('expense_value'))
+
+        monthly_expenses = {
+            expense['subcategory__category']: round(expense['value'], 2) for expense in monthly_expenses_queryset
+        }
+
+        kwargs['monthly_expenses'] = monthly_expenses
+
+        total_monthly_expenses = sum(monthly_expenses.values())
+
+        kwargs['total_monthly_expenses'] = total_monthly_expenses
+
+        daily_expenses_included_in_report = FinancialExpenses.objects.filter(
+            user__id=self.request.user.id,
+            created__year=year,
+            created__month=month,
+            created__day=day,
+            subcategory__category__accountsettings__report=True,
+            subcategory__category__accountsettings__user__id=self.request.user.id,
+        ).values('subcategory__category').annotate(value=Sum('expense_value'))
+
+        daily_expenses_included_in_report = {
+            expense['subcategory__category']: expense['value'] for expense in daily_expenses_included_in_report
+        }
+
+        kwargs['daily_expenses_included_in_report'] = daily_expenses_included_in_report
+
+        limits_included_in_report = AccountSettings.objects.filter(
+            user__id=self.request.user.id,
+            report=True,
+        ).values('category', 'limit_value')
+
+        limits_included_in_report = {
+            limit['category']: limit['limit_value'] - daily_expenses_included_in_report.get(limit['category'], 0)
+            for limit in limits_included_in_report
+        }
+
+        kwargs['limits_included_in_report'] = limits_included_in_report
+
+        daily_balance = sum(limits_included_in_report.values())
+
+        kwargs['daily_balance'] = daily_balance
+
+        if daily_balance < 0:
+            kwargs['balance_message'] = 'Overspending value'
+        else:
+            kwargs['balance_message'] = 'Balance to use today'
+
         if now.date().year == year and now.date().month == month:
-            limit_values = {
-                setting.category.name:
-                setting.limit_value - coast_data.get(now.date(), {}).get(setting.category.name, 0) if setting.report else '-'
-                for setting in AccountSettings.objects.filter(user__id=self.request.user.id).order_by('category__name')
-            }
-
-            settings_for_report = AccountSettings.objects.filter(user__id=self.request.user.id, report=True)
-
-            total_day_limits = sum(setting.limit_value for setting in settings_for_report)
-
-            total_day_coasts = sum(coast_data.get(now.date(), {}).get(setting.category.name, 0) for setting in settings_for_report)
-
-            # check if there no any coasts
-            total_day_coasts = 0 if not total_day_coasts else total_day_coasts.amount
-            total_day_limits = 0 if not total_day_limits else total_day_limits.amount
-
-            total_day_to_use = total_day_limits - total_day_coasts
-
-            if total_day_coasts > total_day_limits:
-                kwargs['balance_message'] = 'Overspending value'
-            else:
-                kwargs['balance_message'] = 'Balance to use today'
-            kwargs['day_limits'] = total_day_to_use
-
+            limit_values = True
         else:
             limit_values = None
 
         kwargs['categories_obj'] = categories_objects
-        kwargs['coast_data'] = {key: coast_data[key] for key in reversed(sorted(coast_data))}
-        kwargs['total_day_coast'] = total_day_coast
-        kwargs['total_month_coast'] = total_month_coast
-        kwargs['total_category_month_coast'] = total_category_month_coast
         kwargs['current_year'] = year
         kwargs['current_month'] = calendar.month_name[month]
         kwargs['limits'] = limit_values
@@ -367,7 +371,7 @@ def send_email(request, pk):
                 message = 'Find you statistic in attachment'
                 file_to_send_url = f'{BASE_DIR}/finance/static/emails/{pk}-{cd["year"]}-{cd["month"]}.txt'
 
-                for expense in FinancialExpenses.objects.filter(user__id=pk, created__year=cd["year"], created__month=cd["month"]):
+                for expense in FinancialExpenses.objects.filter(user__id=pk, created__year=cd["year"], created__month=cd["month"]).select_related('subcategory'):
                     info_data.append(f'{expense.created.strftime("%d-%m-%Y: %H:%M")} '
                                      f'was spent {expense.expense_value} '
                                      f'in {expense.subcategory.category.name}: {expense.subcategory.name}')

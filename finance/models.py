@@ -1,12 +1,9 @@
-import datetime
-
 from PIL import Image
 from django.db import models
 from djmoney.models.fields import MoneyField
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.urls import reverse
-from wallet.settings import TODAY_IS
 
 # Create your models here.
 
@@ -28,9 +25,6 @@ class Categories(models.Model):
     class Meta:
         verbose_name = "Category"
         verbose_name_plural = "Categories"
-
-    def __str__(self):
-        return self.name or 'Unknown'
 
 
 class SubCategories(models.Model):

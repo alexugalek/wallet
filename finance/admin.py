@@ -41,8 +41,15 @@ class BillsAdmin(admin.ModelAdmin):
         model = Bills
 
 
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = [field.name for field in Categories._meta.fields]
+
+    class Meta:
+        model = Categories
+
+
 admin.site.register(FinancialExpenses, FinancialExpensesAdmin)
-admin.site.register(Categories)
+admin.site.register(Categories, CategoryAdmin)
 admin.site.register(SubCategories)
 admin.site.register(AccountSettings, AccountSettingsAdmin)
 admin.site.register(TelegramCredentials, TelegramCredentialsAdmin)
