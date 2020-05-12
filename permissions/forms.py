@@ -93,3 +93,9 @@ class EditInfo(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field in self.fields:
             self.fields[field].widget.attrs['class'] = 'form-control'
+
+    def clean_username(self):
+        cd = self.cleaned_data
+        if not re.fullmatch(r'[0-9a-zA-Z_]*', cd['username']):
+            raise forms.ValidationError('Your username should contains only latin symbols, numbers and underscore')
+        return cd['username']

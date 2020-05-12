@@ -364,6 +364,7 @@ def send_email(request, pk):
         if form.is_valid():
             cd = form.cleaned_data
             user_email = User.objects.get(pk=pk).email
+            print(user_email)
             info_data = []
             total_expenses = 0
             if user_email:
@@ -381,13 +382,14 @@ def send_email(request, pk):
                 try:
                     with open(file_to_send_url, 'w') as file:
                         file.write('\n'.join(info_data))
-
                     send_email_custom(subject, message, EMAIL_HOST_USER, [user_email, ], file_to_send_url)
                     SEND_EMAIL_MSG = 'Successful send on E-mail'
                     ERROR_OCCURRED = False
                 except Exception as e:
                     print(e)
                     SEND_EMAIL_MSG = 'Something went wrong'
+            else:
+                SEND_EMAIL_MSG = 'Email not set'
             return redirect('finance:info-detail',
                             pk=request.user.id,
                             year_filter=cd['year'],

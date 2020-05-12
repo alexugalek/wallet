@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'djmoney',
+    'django_nose',
 ]
 
 MIDDLEWARE = [
@@ -149,3 +150,4 @@ PROXY_URL = 'https://telegg.ru/orig/bot'
 
 TODAY_IS = datetime.datetime.utcnow()
 PERMANENT_URL = 'https://053f1f4a.ngrok.io/finance/registration'
+TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'

@@ -6,8 +6,9 @@ from django.shortcuts import render, redirect
 from django.urls import reverse, reverse_lazy
 from django.views.generic import CreateView
 from django.contrib.auth.models import User
+
+from finance.models import Categories, AccountSettings
 from .forms import AuthUserForm, RegistrationLoginForm, PasswordResetFormCustom, SetPasswordFormCustom, EditInfo
-import functools
 
 
 # Create your views here.
@@ -16,9 +17,6 @@ import functools
 class WalletLoginView(LoginView):
     template_name = 'accounts/login.html'
     form_class = AuthUserForm
-
-    # def get_success_url(self):
-    #     return reverse('finance:info', args=[self.request.user.id])
 
 
 class RegistrationLoginView(CreateView):
@@ -32,6 +30,13 @@ class RegistrationLoginView(CreateView):
         password = form.cleaned_data['password']
         auth_user = authenticate(username=username, password=password)
         login(self.request, auth_user)
+
+        for category in Categories.objects.all():
+            account = AccountSettings()
+            account.user = self.request.user
+            account.category = category
+            account.save()
+            print('11111')
 
         # user settings creation
 
@@ -56,28 +61,32 @@ class PasswordResetConfirmViewCustom(PasswordResetConfirmView):
 
 
 PREVIOUS_METHOD_POST = False
+SUCCESSFUL = False
 
 
 @login_required
 def edit_info(request):
-    global PREVIOUS_METHOD_POST
+    global PREVIOUS_METHOD_POST, SUCCESSFUL
     template = 'accounts/edit_info.html'
-    successful = False
+    form_errors = None
     if request.method == 'POST':
+        PREVIOUS_METHOD_POST = True
         edit_form = EditInfo(instance=request.user, data=request.POST)
         if edit_form.is_valid():
             edit_form.save()
-            PREVIOUS_METHOD_POST = True
+            SUCCESSFUL = True
             return redirect('permissions:edit')
-
-    if PREVIOUS_METHOD_POST:
-        successful = True
+        else:
+            form_errors = edit_form.errors
 
     edit_form = EditInfo(instance=request.user)
     context_data = {
         'edit_form': edit_form,
-        'successful_changed': successful,
+        'successful_changed': SUCCESSFUL,
+        'previous_method_post': PREVIOUS_METHOD_POST,
+        'edit_form_errors': form_errors,
     }
     PREVIOUS_METHOD_POST = False
+    SUCCESSFUL = False
     return render(request, template, context_data)
 

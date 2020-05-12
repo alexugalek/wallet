@@ -17,8 +17,8 @@ def get_default_category():
 
 
 class Categories(models.Model):
-    name = models.CharField(max_length=100, default=None, null=True, blank=True)
-    user = models.ManyToManyField(User, through='AccountSettings')
+    name = models.CharField(max_length=100, unique=True, default=None, null=True, blank=True)
+    # user = models.ManyToManyField(User, through='AccountSettings')
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
 
@@ -91,7 +91,7 @@ class AccountSettings(models.Model):
 
     def get_absolute_url_settings(self):
         return reverse('finance:settings-detail',
-                       args=[self.id, self.user.id])
+                       args=[self.user.id, self.id])
 
 
 class TelegramCredentials(models.Model):

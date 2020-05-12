@@ -1,5 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
+{% block AddExpenses %}
+{% endblock %}
 
 <div class="ml-3">
    <h1>
@@ -16,17 +18,34 @@
 </div>
 
 {% if successful_changed %}
-   <div id="my-alert" class="col-lg-3" align="center">
-    <div class="alert alert-primary mt-3" role="alert" align="center">
-  Successful done!
-</div>
-    </div>
+   <div id="my-alert-good" class="col-lg-3" align="center">
+     <div class="alert alert-primary mt-3" role="alert" align="center">
+       Successful done!
+     </div>
+   </div>
+   <script>
+    setTimeout(()=>{
+    var alertId = document.getElementById('my-alert-good')
+    alertId.classList.add('modal')
+    },1000);
+</script>
+{% else %}
+    {% if previous_method_post %}
+        <div id="my-alert-bad" class="col-lg-3" align="center">
+            <div class="alert alert-danger mt-3" role="alert" align="center">
+                {% for error_name, error in edit_form_errors.items %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+        </div>
+     {% endif %}
 
 <script>
 setTimeout(()=>{
-var alertId = document.getElementById('my-alert')
+var alertId = document.getElementById('my-alert-bad')
 alertId.classList.add('modal')
 },1000);
 </script>
-    {% endif %}
+
+{% endif %}
 {% endblock %}
