@@ -16,13 +16,13 @@ from django.shortcuts import redirect
 from wallet.settings import BASE_DIR, EMAIL_HOST_USER
 
 
-def send_email_custom(subject, message, from_email, to_emails, attachment=None, tmp_attachments=True):
+def send_email_custom(subject, message, from_email, to_emails, attachment=None):
     email = EmailMessage(subject, message, from_email, to_emails)
     if attachment is not None:
         email.attach_file(attachment)
     email.send()
-    if attachment and tmp_attachments:
-        os.remove(attachment) if os.path.isfile(attachment) else None
+    # if attachment and tmp_attachments:
+    #     os.remove(attachment) if os.path.isfile(attachment) else None
 
 
 def month_converter(month):
@@ -380,13 +380,15 @@ def send_email(request, pk):
                 info_data.append(f'Total expenses: {total_expenses}')
 
                 try:
+                    print('!!!!!!!')
                     with open(file_to_send_url, 'w') as file:
                         file.write('\n'.join(info_data))
+                    print('1111111')
                     send_email_custom(subject, message, EMAIL_HOST_USER, [user_email, ], file_to_send_url)
+                    os.remove(file_to_send_url) if os.path.isfile(file_to_send_url) else None
                     SEND_EMAIL_MSG = 'Successful send on E-mail'
                     ERROR_OCCURRED = False
                 except Exception as e:
-                    print(e)
                     SEND_EMAIL_MSG = 'Something went wrong'
             else:
                 SEND_EMAIL_MSG = 'Email not set'
@@ -398,6 +400,7 @@ def send_email(request, pk):
     return HttpResponse('Bad query')
 
 
+@login_required
 def add_bill_photo(request, pk):
     global FILES_ERROR
 
@@ -417,5 +420,6 @@ def add_bill_photo(request, pk):
             FILES_ERROR = None
         else:
             FILES_ERROR = add_bill_form.errors
+            print(FILES_ERROR)
 
     return redirect(redirect_url) if redirect_url else redirect('finance:info', pk=request.user.id)

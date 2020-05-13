@@ -35,7 +35,6 @@ def get_message(text, chat_id):
 
     # get all active subcategories
     subcategories_names = '\n'.join([subcategory.name for subcategory in SubCategories.objects.all() if subcategory.name != 'Other'])
-
     # input message handler
     raw_text = text.strip().lower()
 
