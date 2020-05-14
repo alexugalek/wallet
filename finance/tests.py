@@ -76,9 +76,6 @@ class ExpenseAddViewTestCase(TestCase):
         )
         self.client.login(username='username', password='password')
 
-    # self.category1 = Categories.objects.create(name='test_name_1')
-    # self.category2 = Categories.objects.create(name='test_name_2')
-
     def test_expense_add_view_response_status_code_200(self):
         response = self.client.get('/finance/info/1/')
         self.assertEqual(response.status_code, 200)

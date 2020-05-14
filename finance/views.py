@@ -266,6 +266,7 @@ class DetailDayView(LoginRequiredCustomMixin, ErrorFilesMessage):
 
         kwargs['detail_fields'] = detail_fields
         kwargs['detail_bills'] = detail_bills
+        kwargs['expense_add_form'] = ExpenseAddForm()
 
         return super().get_context_data(**kwargs)
 
@@ -292,6 +293,7 @@ class DetailUpdateView(LoginRequiredCustomMixin, UpdateView):
         kwargs['update_func'] = True
         kwargs['formatted_day'] = self.object.created.strftime("%d-%m-%Y")
         kwargs['files_errors'] = FILES_ERROR
+        kwargs['expense_add_form'] = ExpenseAddForm()
         FILES_ERROR = None
         return super().get_context_data(**kwargs)
 

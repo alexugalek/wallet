@@ -18,7 +18,6 @@ def get_default_category():
 
 class Categories(models.Model):
     name = models.CharField(max_length=100, unique=True, default=None, null=True, blank=True)
-    # user = models.ManyToManyField(User, through='AccountSettings')
     updated = models.DateTimeField(auto_now=True)
     created = models.DateTimeField(auto_now_add=True)
 

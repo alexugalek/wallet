@@ -1,7 +1,11 @@
 {% extends 'base.html' %}
+{% block expense_form %}
+   {{expense_add_form}}
+{% endblock %}
 {% block content %}
 {% url 'finance:detail' request.user.id formatted_day as return_finance_detail_user %}
 {% url 'finance:delete' request.user.id field.id as delete_url %}
+
 {% if update_func %}
 
 <div align="center" class="container col-lg-12">

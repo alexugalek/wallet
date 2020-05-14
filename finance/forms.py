@@ -42,9 +42,19 @@ class EditExpenseForm(LoginRequiredMixin, forms.ModelForm):
 
     def clean_expense_value(self):
         cd = self.cleaned_data
+        print(cd)
         if not cd['expense_value'].amount:
             raise forms.ValidationError("We don't accept 0 value")
         return cd['expense_value']
+
+    def clean_created(self):
+        cd = self.cleaned_data
+        created_date = cd['created']
+        print(created_date)
+        print(type(created_date))
+        if created_date.year < 2019 or created_date.year > 2020:
+            raise forms.ValidationError('Please enter year between 2019-2020')
+        return cd['created']
 
 
 class AccountSettingsForm(LoginRequiredMixin, forms.ModelForm):
