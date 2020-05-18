@@ -290,8 +290,6 @@ class AccountSettingsTestCase(TestCase):
         )
 
 
-
-
 class AddBillTestCase(TestCase):
 
     def setUp(self):
@@ -416,6 +414,7 @@ class SendStatisticOnEmail(TestCase):
                 }
             )
             self.assertEqual(mail_mock.call_count, 1)
+
 
 @ddt.ddt
 class MessageHandlerTelegramBorTestCase(TestCase):
